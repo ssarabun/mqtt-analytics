@@ -1,5 +1,7 @@
 
 import sys
+import traceback
+
 
 from flask import (
     Blueprint, request, Response, abort
@@ -38,8 +40,10 @@ def set_counter():
 
             db.commit()
             return Response(status=201)
-        except:
-            print("Oops!", sys.exc_info()[0], "occurred.")
+        except Exception as e:
+            print("Oops!", e.__class__, "occurred.")
+            print(sys.exc_info()[2])
+            traceback.print_exc()
             abort(502)
 
 
@@ -105,7 +109,7 @@ def process_hours(counter_id):
     ''', (counter_id,)).fetchone()
 
     min_id = row[0]
-    print(f'min_id = {min_id}')
+    print(f'process_hours: min_id = {min_id}')
 
     row = db.execute('''
     SELECT MAX(id)
@@ -114,10 +118,11 @@ def process_hours(counter_id):
     ''', (counter_id,))
 
     max_id = 0
-    if row.arraysize > 0:
-        max_id = row.fetchone()[0]
+    rs = row.fetchone()
+    if rs is None:
+        max_id = rs[0]
 
-    print(f'max_id = {max_id}')
+    print(f'process_hours: max_id = {max_id}')
 
     row = db.execute('''
     INSERT INTO counter_value_hour (id, counter_id, created, counter_value)
