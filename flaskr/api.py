@@ -101,7 +101,7 @@ def process_hours(counter_id):
     ''', (counter_id,)).fetchone()
 
     min_id = row[0]
-    print(f'min_id = {min_id-1}')
+    print(f'min_id = {min_id}')
 
     row = db.execute('''
     SELECT MAX(id)
@@ -113,7 +113,7 @@ def process_hours(counter_id):
     if row.arraysize > 0:
         max_id = row.fetchone()[0]
 
-    print(f'max_id = {max_id+1}')
+    print(f'max_id = {max_id}')
 
     row = db.execute('''
     INSERT INTO counter_value_hour (id, counter_id, created, counter_value)
