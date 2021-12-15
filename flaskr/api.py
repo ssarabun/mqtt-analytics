@@ -1,3 +1,6 @@
+
+import sys
+
 from flask import (
     Blueprint, request, Response, abort
 )
@@ -36,6 +39,7 @@ def set_counter():
             db.commit()
             return Response(status=201)
         except:
+            print("Oops!", sys.exc_info()[0], "occurred.")
             abort(502)
 
 
