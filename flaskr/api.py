@@ -134,15 +134,14 @@ def process_hours(counter_id):
     SELECT MAX(id)
     FROM counter_value_hour
     WHERE counter_id = ?
-    ''', (counter_id,))
+    ''', (counter_id,)).fetchone()
 
     min_id = 0
-    rs = row.fetchone()
-    if rs is not None:
-        min_id = rs[0]
+    if row is not None:
+        min_id = row[0]
 
-    current_app.logger.info(f'process_hours: min_id = {min_id}')
-    current_app.logger.info(f'process_hours: max_id = {max_id}')
+    current_app.logger.warn(f'process_hours: min_id = {min_id}')
+    current_app.logger.warn(f'process_hours: max_id = {max_id}')
 
     row = db.execute('''
     INSERT INTO counter_value_hour (id, counter_id, created, counter_value)
