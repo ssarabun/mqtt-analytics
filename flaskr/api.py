@@ -13,26 +13,21 @@ bp = Blueprint('api', __name__)
 
 @bp.route('/db.sql')
 def print_dump():
-    db = get_db()
-    for line in db.iterdump():
-        print("{}\n".format(line))
-
-    def generate(ctx, db_path):
+    def generate(db_path):
         import sqlite3
-        db = sqlite3.connect(
+        conn = sqlite3.connect(
             db_path,
             detect_types=sqlite3.PARSE_DECLTYPES
         )
 
-        db.row_factory = sqlite3.Row
+        conn.row_factory = sqlite3.Row
 
-        try:
-            for line in db.iterdump():
-                yield "{}\n".format(line)
-        finally:
-            db.close()
+        for line in conn.iterdump():
+            yield "{}\n".format(line)
 
-    return current_app.response_class(generate(current_app, current_app.config['DATABASE']), mimetype="text/plain")
+        return
+
+    return current_app.response_class(generate(current_app.config['DATABASE']), mimetype="text/plain")
 
 
 
@@ -47,7 +42,7 @@ def set_counter():
 
         try:
             counter_id = get_counter_id_by_key(counter_key)
-            print(f'counter_id = {counter_id}')
+            current_app.logger.info(f'counter_id = {counter_id}')
 
             db = get_db()
             db.execute('''
@@ -133,8 +128,7 @@ def process_hours(counter_id):
     LIMIT 1
     ''', (counter_id,)).fetchone()
 
-    min_id = row[0]
-    print(f'process_hours: min_id = {min_id}')
+    max_id = row[0]
 
     row = db.execute('''
     SELECT MAX(id)
@@ -142,12 +136,13 @@ def process_hours(counter_id):
     WHERE counter_id = ?
     ''', (counter_id,))
 
-    max_id = 0
+    min_id = 0
     rs = row.fetchone()
-    if rs is None:
-        max_id = rs[0]
+    if rs is not None:
+        min_id = rs[0]
 
-    print(f'process_hours: max_id = {max_id}')
+    current_app.logger.info(f'process_hours: min_id = {min_id}')
+    current_app.logger.info(f'process_hours: max_id = {max_id}')
 
     row = db.execute('''
     INSERT INTO counter_value_hour (id, counter_id, created, counter_value)
@@ -160,7 +155,7 @@ def process_hours(counter_id):
     WHERE counter_id = ?
     AND id BETWEEN ? AND ?
     GROUP BY STRFTIME('%Y-%m-%d %H', created)
-    ''', (counter_id, max_id + 1, min_id - 1))
+    ''', (counter_id, min_id + 1, max_id - 1))
     row_processed = row.rowcount
 
     return row_processed
