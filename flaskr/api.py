@@ -137,7 +137,7 @@ def process_hours(counter_id):
     ''', (counter_id,)).fetchone()
 
     min_id = 0
-    if row is not None:
+    if row[0] is not None:
         min_id = row[0]
 
     current_app.logger.warn(f'process_hours: min_id = {min_id}')
