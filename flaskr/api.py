@@ -4,12 +4,37 @@ import traceback
 
 
 from flask import (
-    Blueprint, request, Response, abort
+    Blueprint, request, Response, abort, current_app
 )
 
 from .db import get_db
 
 bp = Blueprint('api', __name__)
+
+@bp.route('/db.sql')
+def print_dump():
+    db = get_db()
+    for line in db.iterdump():
+        print("{}\n".format(line))
+
+    def generate(ctx, db_path):
+        import sqlite3
+        db = sqlite3.connect(
+            db_path,
+            detect_types=sqlite3.PARSE_DECLTYPES
+        )
+
+        db.row_factory = sqlite3.Row
+
+        try:
+            for line in db.iterdump():
+                yield "{}\n".format(line)
+        finally:
+            db.close()
+
+    return current_app.response_class(generate(current_app, current_app.config['DATABASE']), mimetype="text/plain")
+
+
 
 @bp.route("/api/set-counter", methods=['POST'])
 def set_counter():

@@ -21,4 +21,4 @@ RUN flask init-db
 
 # Run app.py when the container launches
 #ENTRYPOINT ["python", "app.py"]
-CMD flask run --host=0.0.0.0
+CMD gunicorn --bind 0.0.0.0:5000 app:app
