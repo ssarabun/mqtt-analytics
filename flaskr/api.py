@@ -98,7 +98,7 @@ def process_minutes(counter_id):
     SELECT
         MAX(id),
         counter_id,
-        STRFTIME('%Y-%m-%d %H:%M', created),
+        (STRFTIME('%Y-%m-%d %H:%M', created) || ':00'),
         AVG(counter_value)
     FROM counter_value_raw
     WHERE id < ?
@@ -148,7 +148,7 @@ def process_hours(counter_id):
     SELECT
         MAX(id),
         counter_id,
-        STRFTIME('%Y-%m-%d %H', created),
+        (STRFTIME('%Y-%m-%d %H', created) || ':00:00'),
         SUM(counter_value) / 60
     FROM counter_value_min
     WHERE counter_id = ?

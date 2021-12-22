@@ -1,8 +1,11 @@
 from flask import (
-    Blueprint, request, render_template, redirect, url_for
+    Blueprint, request, session, render_template, redirect, url_for
 )
 
+from datetime import (datetime, timedelta)
+
 from .db import get_db
+from .plot import data_to_chart
 
 bp = Blueprint('counter', __name__)
 
@@ -13,17 +16,150 @@ def counters():
         return render_template('counters.html', rows=rows)
 
 
-@bp.route("/counter/<id>", methods=['GET', 'POST'])
-def counter(id):
-    print(f'id={id}')
+@bp.route("/counter/<key>", methods=['GET'])
+def counter(key):
+    print(f'key={key}')
+
+    start_date = None
+    end_date = None
+
+    if 'end_date' in session:
+        end_date = session['end_date']
+    else:
+        end_date = datetime.now().replace(microsecond=0)
+        session['end_date'] = end_date
+
+    if 'start_date' in session:
+        start_date = session['start_date']
+
+    min = request.args.get('min', None)
+    hour = request.args.get('h', None)
+    day = request.args.get('d', None)
+    month = request.args.get('m', None)
+    year = request.args.get('y', None)
+
+    if min is not None:
+        start_date = end_date - timedelta(minutes=int(min))
+        session['start_date'] = start_date
+    elif hour is not None:
+        start_date = end_date - timedelta(hours=int(hour))
+        session['start_date'] = start_date
+    elif day is not None:
+        start_date = end_date - timedelta(days=int(day))
+        session['start_date'] = start_date
+    elif month is not None:
+        start_date = end_date - timedelta(days=(int(month) * 30))
+        session['start_date'] = start_date
+    elif year is not None:
+        start_date = end_date - timedelta(days=(int(year) * 365))
+        session['start_date'] = start_date
+
+    if start_date is None:
+        start_date = end_date - timedelta(days=365)
+
+    before_min = request.args.get('bmin', None)
+    before_hour = request.args.get('bh', None)
+    before_day = request.args.get('bd', None)
+    before_month = request.args.get('bm', None)
+    before_year = request.args.get('by', None)
+
+    if before_min is not None:
+        start_date = start_date - timedelta(minutes=int(before_min))
+        session['start_date'] = start_date
+
+        end_date = end_date - timedelta(minutes=int(before_min))
+        session['end_date'] = end_date
+    elif before_hour is not None:
+        start_date = start_date - timedelta(hours=int(before_hour))
+        session['start_date'] = start_date
+
+        end_date = end_date - timedelta(hours=int(before_hour))
+        session['end_date'] = end_date
+    elif before_day is not None:
+        start_date = start_date - timedelta(days=int(before_day))
+        session['start_date'] = start_date
+
+        end_date = end_date - timedelta(days=int(before_day))
+        session['end_date'] = end_date
+
+    after_min = request.args.get('amin', None)
+    after_hour = request.args.get('ah', None)
+    after_day = request.args.get('ad', None)
+    after_month = request.args.get('am', None)
+    after_year = request.args.get('ay', None)
+
+    if after_min is not None:
+        start_date = start_date + timedelta(minutes=int(after_min))
+        session['start_date'] = start_date
+
+        end_date = end_date + timedelta(minutes=int(after_min))
+        session['end_date'] = end_date
+    elif after_hour is not None:
+        start_date = start_date + timedelta(hours=int(after_hour))
+        session['start_date'] = start_date
+
+        end_date = end_date + timedelta(hours=int(after_hour))
+        session['end_date'] = end_date
+
+
+    print(start_date.strftime('%Y-%m-%d %H:%M:%S'))
+    print(end_date.strftime('%Y-%m-%d %H:%M:%S'))
+
+    td = end_date - start_date
+    print(f'td = {td}')
+    print(f'td.days = {td.days}')
+    print(f'td.seconds = {td.seconds}')
+
     db = get_db()
     if request.method == 'GET':
-        row = db.execute('SELECT * FROM counter WHERE counter_key = ?', (id))
+        counter = db.execute('SELECT * FROM counter WHERE counter_key = ?', (key,)).fetchone()
+
+        int_str = None
+        counter_data = None
+        if td.days == 0 and td.seconds <= 57600:
+            int_str = 'min'
+            counter_data = db.execute('''
+                SELECT
+                    created,
+                    counter_value
+                FROM counter_value_min
+                WHERE counter_id = ?
+                AND created BETWEEN ? AND ?
+                ORDER BY id
+            ''', (counter['counter_id'], start_date, end_date)
+            ).fetchall()
+        elif td.days >= 1:
+            int_str = 'hour'
+            counter_data = db.execute('''
+                SELECT
+                    created,
+                    counter_value
+                FROM counter_value_hour
+                WHERE counter_id = ?
+                AND created BETWEEN ? AND ?
+                ORDER BY id
+            ''', (counter['counter_id'], start_date, end_date)
+            ).fetchall()
+        else:
+            int_str = 'day'
+            counter_data = db.execute('''
+                SELECT
+                    created,
+                    counter_value
+                FROM counter_value_day
+                WHERE counter_id = ?
+                AND created BETWEEN ? AND ?
+                ORDER BY id
+            ''', (counter['counter_id'], start_date, end_date)
+            ).fetchall()
+
+        print(f'counter_data.len={len(counter_data)}')
+
         db.commit()
-        return render_template('counter.html', row=row)
-    elif request.method == 'POST':
-        delete(id)
-        return redirect(url_for('counter.counters'))
+
+        label = "{} {} - {}".format(counter['counter_key'], start_date.strftime('%Y-%m-%d %H:%M:%S'), end_date.strftime('%Y-%m-%d %H:%M:%S'))
+
+        return render_template('counter.html', item=counter, chart=data_to_chart(label, counter_data, int_str))
 
 
 @bp.route("/edit-counter/<id>", methods=['GET', 'POST'])
