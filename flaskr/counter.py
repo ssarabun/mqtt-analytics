@@ -2,7 +2,7 @@ from flask import (
     Blueprint, request, session, render_template, redirect, url_for
 )
 
-from datetime import (datetime, timedelta)
+from datetime import (datetime, timedelta, timezone)
 
 from .db import get_db
 from .plot import data_to_chart
@@ -26,7 +26,7 @@ def counter(key):
     if 'end_date' in session:
         end_date = session['end_date']
     else:
-        end_date = datetime.now().replace(microsecond=0)
+        end_date = datetime.now().replace(second=0, microsecond=0)
         session['end_date'] = end_date
 
     if 'start_date' in session:
@@ -81,6 +81,12 @@ def counter(key):
 
         end_date = end_date - timedelta(days=int(before_day))
         session['end_date'] = end_date
+    elif before_month is not None:
+        start_date = start_date - timedelta(days=(int(before_month) * 30))
+        session['start_date'] = start_date
+
+        end_date = end_date - timedelta(days=(int(before_month) * 30))
+        session['end_date'] = end_date
 
     after_min = request.args.get('amin', None)
     after_hour = request.args.get('ah', None)
@@ -88,19 +94,53 @@ def counter(key):
     after_month = request.args.get('am', None)
     after_year = request.args.get('ay', None)
 
+    d = datetime.now().replace(second=0, microsecond=0)
     if after_min is not None:
         start_date = start_date + timedelta(minutes=int(after_min))
-        session['start_date'] = start_date
-
         end_date = end_date + timedelta(minutes=int(after_min))
+
+        if end_date.replace(tzinfo=timezone.utc) > d.replace(tzinfo=timezone.utc):
+            delta = end_date - start_date
+            end_date = d
+            start_date = end_date - delta
+
+        session['start_date'] = start_date
         session['end_date'] = end_date
     elif after_hour is not None:
         start_date = start_date + timedelta(hours=int(after_hour))
-        session['start_date'] = start_date
-
         end_date = end_date + timedelta(hours=int(after_hour))
-        session['end_date'] = end_date
 
+        if end_date.replace(tzinfo=timezone.utc) > d.replace(tzinfo=timezone.utc):
+            delta = end_date - start_date
+            end_date = d
+            start_date = end_date - delta
+
+        session['start_date'] = start_date
+        session['end_date'] = end_date
+    elif after_day is not None:
+        start_date = start_date + timedelta(days=int(after_day))
+        end_date = end_date + timedelta(days=int(after_day))
+
+        print(d.replace(tzinfo=timezone.utc).tzname())
+        print(end_date.replace(tzinfo=timezone.utc).tzname())
+        if end_date.replace(tzinfo=timezone.utc) > d.replace(tzinfo=timezone.utc):
+            delta = end_date - start_date
+            end_date = d
+            start_date = end_date - delta
+
+        session['start_date'] = start_date
+        session['end_date'] = end_date
+    elif after_month is not None:
+        start_date = start_date + timedelta(days=(int(after_month) * 30))
+        end_date = end_date + timedelta(days=(int(after_month) * 30))
+
+        if end_date.replace(tzinfo=timezone.utc) > d.replace(tzinfo=timezone.utc):
+            delta = end_date - start_date
+            end_date = d
+            start_date = end_date - delta
+
+        session['start_date'] = start_date
+        session['end_date'] = end_date
 
     print(start_date.strftime('%Y-%m-%d %H:%M:%S'))
     print(end_date.strftime('%Y-%m-%d %H:%M:%S'))
@@ -157,7 +197,7 @@ def counter(key):
 
         db.commit()
 
-        label = "{} {} - {}".format(counter['counter_key'], start_date.strftime('%Y-%m-%d %H:%M:%S'), end_date.strftime('%Y-%m-%d %H:%M:%S'))
+        label = "{} {} - {} ({})".format(counter['counter_key'], start_date.strftime('%Y-%m-%d %H:%M:%S'), end_date.strftime('%Y-%m-%d %H:%M:%S'), (end_date - start_date))
 
         return render_template('counter.html', item=counter, chart=data_to_chart(label, counter_data, int_str))
 

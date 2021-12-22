@@ -22,8 +22,6 @@ def data_to_chart(label, counter_data, td):
     x_array = [ row['created'] for row in counter_data]
     y_array = [row['counter_value'] for row in counter_data]
 
-    plt.figure()
-
     # создаём рисунок с координатную плоскость
     fig, ax = plt.subplots(1, 1, figsize=(12, 4), constrained_layout=True)
 
@@ -32,8 +30,9 @@ def data_to_chart(label, counter_data, td):
 #     ax.xlabel('period')
 #     ax.ylabel('Loading')
 
-    interval = 1
+    interval = 12
     if td == 'hour':
+        print(f'counter_data.len={len(counter_data)}')
         if len(counter_data) > 27:
             interval = 4
         elif len(counter_data) > 16:
@@ -47,16 +46,16 @@ def data_to_chart(label, counter_data, td):
     elif td == 'min':
         major_locator = dates.HourLocator()
         minor_locator = None
-        if len(counter_data) >= 60 and len(counter_data) < 180:
-            minor_locator = dates.MinuteLocator(interval = 5)
-        elif len(counter_data) >= 180 and len(counter_data) < 360:
-            minor_locator = dates.MinuteLocator(interval = 10)
-        elif len(counter_data) >= 360 and len(counter_data) < 480:
-            minor_locator = dates.MinuteLocator(interval = 15)
-        elif len(counter_data) >= 480:
-            minor_locator = dates.MinuteLocator(interval = 30)
+        if len(counter_data) <= 30:
+            minor_locator = dates.MinuteLocator()
+        elif 30 < len(counter_data) < 180:
+            minor_locator = dates.MinuteLocator(byminute=range(0, 60, 5))
+        elif 180 <= len(counter_data) < 480:
+            minor_locator = dates.MinuteLocator(byminute=range(0, 60, 15))
+        elif 480 <= len(counter_data):
+            minor_locator = dates.MinuteLocator(byminute=range(0, 60, 30))
         else:
-            minor_locator = dates.MinuteLocator(interval = 5)
+            minor_locator = dates.MinuteLocator()
 
 
         ax.xaxis.set_major_locator(major_locator)
@@ -79,5 +78,6 @@ def data_to_chart(label, counter_data, td):
 
     # показываем график
     #plt.show()
+    plt.close(fig)
 
     return my_base64_jpgData.decode("utf-8")
