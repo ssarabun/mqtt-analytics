@@ -5,7 +5,7 @@ from flask import current_app, g
 from flask.cli import with_appcontext
 
 import os
-import cloudstorage as gcs
+from google.cloud import storage
 
 def get_db():
     if 'db' not in g:
@@ -23,17 +23,16 @@ def dump_db():
     bucket = '/' + bucket_name
     filename = bucket + '/schema.sql'
 
-    gcs_file = gcs.open(filename,
-                        'w',
-                        content_type='text/sql',
-                        options={'x-goog-meta-foo': 'foo',
-                                 'x-goog-meta-bar': 'bar'})
+    storage_client = storage.Client()
+    bucket = storage_client.bucket(bucket_name)
+    blob = bucket.blob('schema.sql')
+    blob_source = blob.open(mode='w', encoding='UTF-8')
 
     db = get_db()
     for line in conn.iterdump():
-        gcs_file.write(f'{line}\n')
+        blob_source.write(f'{line}\n')
 
-    gcs_file.close()
+    blob_source.close()
 
 def close_db(e=None):
     db = g.pop('db', None)
