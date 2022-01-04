@@ -29,7 +29,7 @@ def dump_db():
     blob_source = blob.open(mode='w', encoding='UTF-8')
 
     db = get_db()
-    for line in conn.iterdump():
+    for line in db.iterdump():
         blob_source.write(f'{line}\n')
 
     blob_source.close()
