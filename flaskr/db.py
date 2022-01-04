@@ -23,13 +23,11 @@ def dump_db():
     bucket = '/' + bucket_name
     filename = bucket + '/schema.sql'
 
-    write_retry_params = gcs.RetryParams(backoff_factor=1.1)
     gcs_file = gcs.open(filename,
                         'w',
                         content_type='text/sql',
                         options={'x-goog-meta-foo': 'foo',
-                                 'x-goog-meta-bar': 'bar'},
-                        retry_params=write_retry_params)
+                                 'x-goog-meta-bar': 'bar'})
 
     db = get_db()
     for line in conn.iterdump():
