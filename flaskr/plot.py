@@ -30,18 +30,27 @@ def data_to_chart(label, counter_data, td):
 #     ax.xlabel('period')
 #     ax.ylabel('Loading')
 
-    interval = 12
+    print(f'counter_data.len={len(counter_data)}')
     if td == 'hour':
-        print(f'counter_data.len={len(counter_data)}')
-        if len(counter_data) > 27:
-            interval = 4
-        elif len(counter_data) > 16:
-            interval = 2
+        major_locator = None
+        minor_locator = None
+        if len(counter_data) < 30:
+            major_locator = dates.DayLocator()
+            minor_locator = dates.HourLocator(byhour=range(0, 24, 1))
+        elif 30 <= len(counter_data):
+            major_locator = dates.DayLocator()
+            minor_locator = dates.HourLocator(byhour=range(0, 24, 2))
+        else:
+            major_locator = dates.DayLocator()
+            minor_locator = dates.HourLocator(byhour=range(0, 24, 4))
 
-        ax.xaxis.set_major_locator(dates.DayLocator())
+        major_locator.MAXTICKS=50
+        minor_locator.MAXTICKS=50
+
+        ax.xaxis.set_major_locator(major_locator)
         ax.xaxis.set_major_formatter(mdates.DateFormatter('%b %d %H:%M'))
 
-        ax.xaxis.set_minor_locator(dates.HourLocator(interval=interval))
+        ax.xaxis.set_minor_locator(minor_locator)
         ax.xaxis.set_minor_formatter(mdates.DateFormatter('%H:%M'))
     elif td == 'min':
         major_locator = dates.HourLocator()
@@ -50,9 +59,17 @@ def data_to_chart(label, counter_data, td):
             minor_locator = dates.MinuteLocator()
         elif 30 < len(counter_data) < 180:
             minor_locator = dates.MinuteLocator(byminute=range(0, 60, 5))
-        elif 180 <= len(counter_data) < 480:
+        elif 180 <= len(counter_data) < 360:
+            major_locator = dates.HourLocator()
+            minor_locator = dates.MinuteLocator(byminute=range(0, 60, 10))
+        elif 360 <= len(counter_data) < 480:
+            major_locator = dates.HourLocator()
             minor_locator = dates.MinuteLocator(byminute=range(0, 60, 15))
-        elif 480 <= len(counter_data):
+        elif 480 <= len(counter_data) < 576:
+            major_locator = dates.HourLocator(byhour=range(0, 24, 2))
+            minor_locator = dates.MinuteLocator(byminute=range(0, 60, 20))
+        elif 576 <= len(counter_data):
+            major_locator = dates.HourLocator(byhour=range(0, 24, 3))
             minor_locator = dates.MinuteLocator(byminute=range(0, 60, 30))
         else:
             minor_locator = dates.MinuteLocator()

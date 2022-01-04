@@ -4,6 +4,11 @@ import click
 from flask import current_app, g
 from flask.cli import with_appcontext
 
+import cloudstorage as gcs
+from google.appengine.api import app_identity
+
+
+
 
 def get_db():
     if 'db' not in g:
@@ -15,6 +20,25 @@ def get_db():
 
     return g.db
 
+
+def dump_db():
+    bucket_name = os.environ.get('BUCKET_NAME', app_identity.get_default_gcs_bucket_name())
+    bucket = '/' + bucket_name
+    filename = bucket + '/schema.sql'
+
+    write_retry_params = gcs.RetryParams(backoff_factor=1.1)
+    gcs_file = gcs.open(filename,
+                        'w',
+                        content_type='text/sql',
+                        options={'x-goog-meta-foo': 'foo',
+                                 'x-goog-meta-bar': 'bar'},
+                        retry_params=write_retry_params)
+
+    db = get_db()
+    for line in conn.iterdump():
+        gcs_file.write(f'{line}\n')
+
+    gcs_file.close()
 
 def close_db(e=None):
     db = g.pop('db', None)

@@ -8,6 +8,7 @@ from flask import (
 )
 
 from .db import get_db
+from .db import dump_db
 
 bp = Blueprint('api', __name__)
 
@@ -40,6 +41,7 @@ def set_counter():
         counter_key = request_data['counter_key']
         value = request_data['value']
 
+        process_dump = False
         try:
             counter_id = get_counter_id_by_key(counter_key)
             current_app.logger.info(f'counter_id = {counter_id}')
@@ -53,12 +55,17 @@ def set_counter():
             row_processed = process_minutes(counter_id)
             if row_processed > 0:
                 row_processed = process_hours(counter_id)
+                process_dump = True
 
                 if row_processed > 0:
                     print('process counter_value_day')
 
 
             db.commit()
+
+            if process_dump:
+                 dump_db()
+
             return Response(status=201)
         except Exception as e:
             print("Oops!", e.__class__, "occurred.")
