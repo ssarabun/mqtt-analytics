@@ -6,10 +6,6 @@ from flask.cli import with_appcontext
 
 import os
 import cloudstorage as gcs
-from google.appengine.api import app_identity
-
-
-
 
 def get_db():
     if 'db' not in g:
@@ -23,7 +19,7 @@ def get_db():
 
 
 def dump_db():
-    bucket_name = os.environ.get('BUCKET_NAME', app_identity.get_default_gcs_bucket_name())
+    bucket_name = os.environ.get('BUCKET_NAME', None)
     bucket = '/' + bucket_name
     filename = bucket + '/schema.sql'
 
