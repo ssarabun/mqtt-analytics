@@ -55,9 +55,9 @@ def set_counter():
             row_processed = process_minutes(counter_id)
             if row_processed > 0:
                 row_processed = process_hours(counter_id)
-                process_dump = True
 
                 if row_processed > 0:
+                    process_dump = True
                     print('process counter_value_day')
 
 
