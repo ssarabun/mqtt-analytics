@@ -40,14 +40,16 @@ def restore_db(db_name):
     bucket = storage_client.bucket(bucket_name)
     blob = bucket.blob(filename)
 
-    with sqlite3.connect(
-                     db_name,
-                     detect_types=sqlite3.PARSE_DECLTYPES
-                 ) as db
-        db.row_factory = sqlite3.Row
+    db = sqlite3.connect(
+                 db_name,
+                 detect_types=sqlite3.PARSE_DECLTYPES
+             )
+    db.row_factory = sqlite3.Row
 
-        with blob.open(mode='r', encoding='UTF-8') as blob_source:
-            db.executescript(blob_source.read().decode('utf8'))
+    with blob.open(mode='r', encoding='UTF-8') as blob_source:
+        db.executescript(blob_source.read().decode('utf8'))
+
+    db.close()
 
 
 def close_db(e=None):
