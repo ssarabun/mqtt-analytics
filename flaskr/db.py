@@ -20,19 +20,31 @@ def get_db():
 
 def dump_db():
     bucket_name = os.environ.get('BUCKET_NAME', None)
-    bucket = '/' + bucket_name
-    filename = bucket + '/schema.sql'
+    filename = 'schema.sql'
 
     storage_client = storage.Client()
     bucket = storage_client.bucket(bucket_name)
-    blob = bucket.blob('schema.sql')
-    blob_source = blob.open(mode='w', encoding='UTF-8')
+    blob = bucket.blob(filename)
 
     db = get_db()
-    for line in db.iterdump():
-        blob_source.write(f'{line}\n')
+    with blob.open(mode='w', encoding='UTF-8') as blob_source:
+        for line in db.iterdump():
+            blob_source.write(f'{line}\n')
 
-    blob_source.close()
+
+def restore_db():
+    bucket_name = os.environ.get('BUCKET_NAME', None)
+    filename = 'schema.sql'
+
+    storage_client = storage.Client()
+    bucket = storage_client.bucket(bucket_name)
+    blob = bucket.blob(filename)
+
+    db = get_db()
+
+    with blob.open(mode='r', encoding='UTF-8') as blob_source:
+        db.executescript(blob_source.read().decode('utf8'))
+
 
 def close_db(e=None):
     db = g.pop('db', None)

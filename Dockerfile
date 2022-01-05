@@ -17,7 +17,7 @@ RUN pip install --trusted-host pypi.python.org -r requirements.txt
 # Copy the rest of the working directory contents into the container at /app
 COPY . .
 
-RUN flask init-db
+#RUN flask init-db
 
 # Run app.py when the container launches
 ENTRYPOINT ["python", "app.py"]

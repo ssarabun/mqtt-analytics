@@ -32,6 +32,7 @@ def create_app(test_config=None):
 
     from . import db
     db.init_app(app)
+    db.restore_db()
 
     from . import application
     app.register_blueprint(application.bp)
