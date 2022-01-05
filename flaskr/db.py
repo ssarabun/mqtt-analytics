@@ -32,7 +32,7 @@ def dump_db():
             blob_source.write(f'{line}\n')
 
 
-def restore_db():
+def restore_db(db_name):
     bucket_name = os.environ.get('BUCKET_NAME', None)
     filename = 'schema.sql'
 
@@ -41,7 +41,7 @@ def restore_db():
     blob = bucket.blob(filename)
 
     with sqlite3.connect(
-                     current_app.config['DATABASE'],
+                     db_name,
                      detect_types=sqlite3.PARSE_DECLTYPES
                  ) as db
         db.row_factory = sqlite3.Row
