@@ -47,7 +47,7 @@ def restore_db(db_name):
     db.row_factory = sqlite3.Row
 
     with blob.open(mode='r', encoding='UTF-8') as blob_source:
-        db.executescript(blob_source.read().decode('utf8'))
+        db.executescript(blob_source.read())
 
     db.close()
 
